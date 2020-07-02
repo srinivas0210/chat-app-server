@@ -12,37 +12,46 @@ io.on('connection', (socket) => {
     console.log('we had a new connection');
 
     socket.on('join', ({ name, room }, callback) => {
-        const {error , user} = users.addUser({ id: socket.id, name, room });
-        
-        console.log('user is ',user);
-        
+        const { error, user } = users.addUser({ id: socket.id, name, room });
+
+        console.log('user is ', user);
+
 
         if (error) {
-            return callback({ message: 'error unda'  });
+            return callback({ message: 'error unda' });
         }
 
         socket.join(user.room);
-        socket.broadcast.emit('newuseradded',user);
-        
+        socket.broadcast.emit('newuseradded', user);
 
-        socket.emit('message', { user: 'admin',text: `You joined to the ${user.room}` });
-        socket.broadcast.emit('message', {user: 'admin', text: `${user.name} joined to the ${user.room}` });
 
-        
+        socket.emit('message', { user: 'admin', text: `You joined to the ${user.room}` });
+        socket.broadcast.emit('message', { user: 'admin', text: `${user.name} joined to the ${user.room}` });
     });
 
-    socket.on('sendMessage',(message , callback)=>{
+    socket.on('fetchFeed', async (name) => {
+        const userFeed = await users.getVideo(name);
+        socket.emit('userFeed' , userFeed);
+        console.log('userFeed', userFeed);
+    })
+
+    socket.on('sendMessage', (data, callback) => {
         const user = users.getUser(socket.id);
-        console.log('user name is : ' ,user.name);
+        users.addMessage(data);
+        console.log('user name is : ', user);
 
 
-        socket.emit('message',{user: user.name , text: message});
-        socket.broadcast.emit('message',{user: user.name , text: message});
+        socket.emit('message', { user: user.name, text: data.message, time: data.time });
+        socket.broadcast.emit('message', { user: user.name, text: data.message, time: data.time });
 
         callback();
     })
+    socket.on('addUrl', ({ name, url }) => {
+        users.addVideo({ name, url });
 
+    })
     socket.on('disconnect', (socket) => {
+        console.log('in disconnect socket id is : ', socket.id);
         users.removeUser(socket.id);
     })
 

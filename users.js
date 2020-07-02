@@ -1,3 +1,11 @@
+const Pool = require('pg').Pool
+const pool = new Pool({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'postgres',
+    password: 'postgres',
+    port: 5432,
+})
 users = []
 
 const addUser = ({ id, name, room }) => {
@@ -10,13 +18,45 @@ const addUser = ({ id, name, room }) => {
     const user = { id, name, room };
     users.push(user);
 
-    return {user};
+    return { user };
 
 
 }
 
+const addVideo = ({ name, url }) => {
+    console.log('added videoUrl');
+
+    pool.query('INSERT INTO videofeed (name, videoUrl) VALUES ($1, $2)', [name, url], (error, results) => {
+        if (error) {
+            throw error
+        }
+
+    })
+}
+
+const getVideo = async (name) => {
+    console.log('fetched video urls');
+    console.log(name);
+
+    const response = await pool.query('SELECT * FROM videofeed WHERE name = $1', [name])
+    console.log('rows', response.rows)
+    return response.rows
+}
+
+const addMessage = (data) => {
+    const { name, message, time, room } = data;
+    console.log("hi");
+    pool.query('INSERT INTO chatdata (name, room,message,time) VALUES ($1, $2,$3,$4)', [name, room, message, time], (error, results) => {
+        if (error) {
+            throw error
+        }
+
+    })
+
+}
+
 const removeUser = (id) => {
-    console.log(id,'ssssss');
+    console.log(id, 'ssssss');
     const user = users.find((user) => user.id === id);
     users.splice(user.id, 1);
 
@@ -46,4 +86,7 @@ module.exports = {
     removeUser,
     getUser,
     getUsersFromRoom,
+    addMessage,
+    addVideo,
+    getVideo,
 }
