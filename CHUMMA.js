@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+
+
 const express = require('express');
 const cors = require('cors');
 const socketio = require('socket.io');
@@ -11,15 +13,18 @@ const io = socketio(server);
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 
+
 const users = require('./users');
+const router = require('./router');
 const utils = require('./utils');
+
 
 // static user details
 const userData = {
     userId: "789789",
-    password: "a",
+    password: "123456",
     name: "Clue Mediator",
-    username: "a",
+    username: "cluemediator",
     isAdmin: true
 };
 
@@ -36,7 +41,9 @@ io.on('connection', (socket) => {
 
     socket.on('join', ({ name, room }, callback) => {
         const { error, user } = users.addUser({ id: socket.id, name, room });
- console.log('user is ', user);
+
+        console.log('user is ', user);
+
 
         if (error) {
             return callback({ message: 'error unda' });
@@ -44,6 +51,7 @@ io.on('connection', (socket) => {
 
         socket.join(user.room);
         socket.broadcast.emit('newuseradded', user);
+
 
         socket.emit('message', { user: 'admin', text: `You joined to the ${user.room}` });
         socket.broadcast.emit('message', { user: 'admin', text: `${user.name} joined to the ${user.room}` });
@@ -60,6 +68,7 @@ io.on('connection', (socket) => {
         users.addMessage(data);
         console.log('user name is : ', user);
 
+
         socket.emit('message', { user: user.name, text: data.message, time: data.time });
         socket.broadcast.emit('message', { user: user.name, text: data.message, time: data.time });
 
@@ -68,6 +77,7 @@ io.on('connection', (socket) => {
     socket.on('addUrl', ({ name, url }) => {
         users.addVideo({ name, url });
     })
+
     socket.on('disconnect', (socket) => {
         console.log('in disconnect socket id is : ', socket.id);
         users.removeUser(socket.id);
@@ -99,11 +109,11 @@ app.use(function (req, res, next) {
 
 // request handlers
 app.get('/', (req, res) => {
-   
+    if (!req.user) return res.status(401).json({ success: false, message: 'Invalid user to access it.' });
     var today = new Date();
     var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
 
-    res.send('Welcome to the Node.js Tutorial! - ' + ' at '+time);
+    res.send('Welcome to the Node.js Tutorial! - ' + req.user.name + ' at ' + time);
 });
 
 
@@ -111,7 +121,7 @@ app.get('/', (req, res) => {
 app.post('/users/signin', function (req, res) {
     const user = req.body.username;
     const pwd = req.body.password;
-console.log('finished');
+
     // return 400 status if username/password is not exist
     if (!user || !pwd) {
         return res.status(400).json({
@@ -167,6 +177,6 @@ app.get('/verifyToken', function (req, res) {
     });
 });
 
-server.listen(PORT, () => {
-    console.log('Server is started on: ' + PORT);
-}); 
+app.listen(PORT, () => {
+    console.log('Server started on: ' + PORT);
+});
